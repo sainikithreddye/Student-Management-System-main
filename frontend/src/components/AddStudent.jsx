@@ -9,9 +9,16 @@ import {
   FaCalendarAlt, 
   FaGraduationCap,
   FaCalendarCheck,
-  FaToggleOn 
+  FaToggleOn,
+  FaArrowLeft
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
+import getUrl from '../utils/getUrl';
+import Card from './ui/Card';
+import Input from './ui/Input';
+import Button from './ui/Button';
+import Switch from './ui/Switch';
 
 function AddStudent() {
   const [student, setStudent] = useState({
@@ -25,7 +32,11 @@ function AddStudent() {
     isActive: true
   });
 
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
   const navigate = useNavigate();
+  const apiUrl = getUrl();
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
@@ -33,16 +44,64 @@ function AddStudent() {
       ...student, 
       [name]: type === 'checkbox' ? checked : value 
     });
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' });
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!student.studentId.trim()) {
+      newErrors.studentId = 'Student ID is required';
+    } else if (!/^[a-zA-Z0-9]+$/.test(student.studentId)) {
+      newErrors.studentId = 'Student ID must be alphanumeric';
+    }
+
+    if (!student.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (student.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    }
+
+    if (!student.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (student.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+    }
+
+    if (!student.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(student.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!student.dob) {
+      newErrors.dob = 'Date of birth is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    
+    if (!validate()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await axios.post('https://student-management-system-19g4.onrender.com/students', student);
+      await axios.post(`${apiUrl}/students`, student);
       toast.success('Student added successfully!');
       navigate('/students');
     } catch (error) {
       toast.error(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,178 +112,181 @@ function AddStudent() {
     (_, i) => currentYear - i
   );
 
+  const departments = [
+    'Computer Science',
+    'Electrical',
+    'Mechanical',
+    'Civil',
+    'Electronics'
+  ];
+
   return (
-    <div className="container mt-4">
-      <div className="card shadow-sm border-0">
-        <div className="card-header bg-primary text-white">
-          <h2 className="mb-0 d-flex align-items-center">
-            <FaUserPlus className="me-2" />
-            Add New Student
-          </h2>
-        </div>
-
-        <div className="card-body p-4">
-          <form onSubmit={handleSubmit}>
-            {/* Student ID */}
-            <div className="mb-3">
-              <label htmlFor="studentId" className="form-label fw-semibold">
-                <FaIdCard className="me-2" />
-                Student ID
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="studentId"
-                name="studentId"
-                placeholder="Enter student ID"
-                value={student.studentId}
-                onChange={handleChange}
-                required
-                pattern="[a-zA-Z0-9]+"
-                title="Alphanumeric characters only"
-              />
-            </div>
-
-            {/* First Name */}
-            <div className="mb-3">
-              <label htmlFor="firstName" className="form-label fw-semibold">
-                <FaUser className="me-2" />
-                First Name
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="firstName"
-                name="firstName"
-                placeholder="Enter first name"
-                value={student.firstName}
-                onChange={handleChange}
-                required
-                minLength="2"
-              />
-            </div>
-
-            {/* Last Name */}
-            <div className="mb-3">
-              <label htmlFor="lastName" className="form-label fw-semibold">
-                <FaUser className="me-2" />
-                Last Name
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="lastName"
-                name="lastName"
-                placeholder="Enter last name"
-                value={student.lastName}
-                onChange={handleChange}
-                required
-                minLength="2"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label fw-semibold">
-                <FaEnvelope className="me-2" />
-                Email Address
-              </label>
-              <input
-                type="email"
-                className="form-control"
-                id="email"
-                name="email"
-                placeholder="Enter email"
-                value={student.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            {/* Date of Birth */}
-            <div className="mb-3">
-              <label htmlFor="dob" className="form-label fw-semibold">
-                <FaCalendarAlt className="me-2" />
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                id="dob"
-                name="dob"
-                value={student.dob}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            {/* Department */}
-            <div className="mb-3">
-              <label htmlFor="department" className="form-label fw-semibold">
-                <FaGraduationCap className="me-2" />
-                Department
-              </label>
-              <select
-                className="form-select"
-                id="department"
-                name="department"
-                value={student.department}
-                onChange={handleChange}
-                required
-              >
-                <option value="Computer Science">Computer Science</option>
-                <option value="Electrical">Electrical</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Civil">Civil</option>
-                <option value="Electronics">Electronics</option>
-              </select>
-            </div>
-
-            {/* Enrollment Year */}
-            <div className="mb-3">
-              <label htmlFor="enrollmentYear" className="form-label fw-semibold">
-                <FaCalendarCheck className="me-2" />
-                Enrollment Year
-              </label>
-              <select
-                className="form-select"
-                id="enrollmentYear"
-                name="enrollmentYear"
-                value={student.enrollmentYear}
-                onChange={handleChange}
-                required
-              >
-                {yearOptions.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Active Status */}
-            <div className="mb-4 form-check form-switch">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="isActive"
-                name="isActive"
-                checked={student.isActive}
-                onChange={handleChange}
-              />
-              <label htmlFor="isActive" className="form-check-label fw-semibold">
-                <FaToggleOn className="me-2" />
-                {student.isActive ? 'Active Student' : 'Inactive Student'}
-              </label>
-            </div>
-
-            <div className="d-grid gap-2">
-              <button type="submit" className="btn btn-primary">
-                <FaUserPlus className="me-2" />
-                Add Student
-              </button>
-            </div>
-          </form>
-        </div>
+    <div className="page-container">
+      <div className="page-header">
+        <Link to="/students" style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: 'var(--space-2)',
+          marginBottom: 'var(--space-4)',
+          color: 'var(--text-secondary)',
+          textDecoration: 'none',
+          fontSize: 'var(--font-size-sm)',
+          fontWeight: 'var(--font-weight-medium)',
+          transition: 'color var(--transition-fast)'
+        }}
+        onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
+        onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
+        >
+          <FaArrowLeft /> Back to Students
+        </Link>
+        <h1 className="page-title">
+          <FaUserPlus style={{ marginRight: 'var(--space-3)', verticalAlign: 'middle' }} />
+          Add New Student
+        </h1>
+        <p className="page-subtitle">
+          Enter the student information to create a new record
+        </p>
       </div>
+
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <Input
+              label="Student ID"
+              id="studentId"
+              name="studentId"
+              value={student.studentId}
+              onChange={handleChange}
+              placeholder="Enter student ID"
+              required
+              error={errors.studentId}
+              icon={<FaIdCard />}
+              fullWidth
+            />
+
+            <Input
+              label="First Name"
+              id="firstName"
+              name="firstName"
+              value={student.firstName}
+              onChange={handleChange}
+              placeholder="Enter first name"
+              required
+              error={errors.firstName}
+              icon={<FaUser />}
+              fullWidth
+            />
+
+            <Input
+              label="Last Name"
+              id="lastName"
+              name="lastName"
+              value={student.lastName}
+              onChange={handleChange}
+              placeholder="Enter last name"
+              required
+              error={errors.lastName}
+              icon={<FaUser />}
+              fullWidth
+            />
+
+            <Input
+              label="Email Address"
+              id="email"
+              name="email"
+              type="email"
+              value={student.email}
+              onChange={handleChange}
+              placeholder="Enter email address"
+              required
+              error={errors.email}
+              icon={<FaEnvelope />}
+              fullWidth
+            />
+
+            <Input
+              label="Date of Birth"
+              id="dob"
+              name="dob"
+              type="date"
+              value={student.dob}
+              onChange={handleChange}
+              required
+              error={errors.dob}
+              icon={<FaCalendarAlt />}
+              fullWidth
+            />
+
+            <div className="input-group input-group--full-width">
+              <label htmlFor="department" className="input-label">
+                <FaGraduationCap style={{ marginRight: 'var(--space-2)' }} />
+                Department
+                <span className="input-label__required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <select
+                  id="department"
+                  name="department"
+                  className="input"
+                  value={student.department}
+                  onChange={handleChange}
+                  required
+                >
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="input-group input-group--full-width">
+              <label htmlFor="enrollmentYear" className="input-label">
+                <FaCalendarCheck style={{ marginRight: 'var(--space-2)' }} />
+                Enrollment Year
+                <span className="input-label__required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <select
+                  id="enrollmentYear"
+                  name="enrollmentYear"
+                  className="input"
+                  value={student.enrollmentYear}
+                  onChange={handleChange}
+                  required
+                >
+                  {yearOptions.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 'var(--space-6)' }}>
+            <Switch
+              label="Active Student"
+              checked={student.isActive}
+              onChange={(e) => handleChange({ target: { name: 'isActive', type: 'checkbox', checked: e.target.checked } })}
+            />
+          </div>
+
+          <div className="form-actions">
+            <Link to="/students">
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button 
+              type="submit" 
+              variant="primary"
+              icon={<FaUserPlus />}
+              loading={loading}
+            >
+              Add Student
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

@@ -11,19 +11,30 @@ import {
   FaSchool,
   FaCalendarAlt,
   FaToggleOn,
-  FaUserPlus
+  FaUserPlus,
+  FaSearch,
+  FaSpinner
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import getUrl from '../utils/getUrl';
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
 
-function StudentListCards() {
+function StudentList() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const apiUrl = getUrl();
 
   const fetchStudents = async () => {
     try {
-      const res = await axios.get('https://localhost:5000/students');
-      console.log('API Response:', res.data); // Debugging log
+      setLoading(true);
+      setError(null);
+      const res = await axios.get(`${apiUrl}/students`);
       if (res.data && Array.isArray(res.data)) {
         setStudents(res.data);
       } else {
@@ -43,8 +54,12 @@ function StudentListCards() {
   }, []);
 
   const deleteStudent = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this student?')) {
+      return;
+    }
+
     try {
-      await axios.delete(`https://student-management-system-19g4.onrender.com/students/${id}`);
+      await axios.delete(`${apiUrl}/students/${id}`);
       toast.success('Student deleted successfully');
       fetchStudents();
     } catch (err) {
@@ -60,15 +75,27 @@ function StudentListCards() {
         day: 'numeric'
       });
     } catch {
-      return dateString; // Return raw string if date parsing fails
+      return dateString;
     }
   };
 
+  const filteredStudents = students.filter(student => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      student.firstName?.toLowerCase().includes(searchLower) ||
+      student.lastName?.toLowerCase().includes(searchLower) ||
+      student.studentId?.toLowerCase().includes(searchLower) ||
+      student.email?.toLowerCase().includes(searchLower) ||
+      student.department?.toLowerCase().includes(searchLower)
+    );
+  });
+
   if (loading) {
     return (
-      <div className="d-flex justify-content-center my-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="page-container">
+        <div className="empty-state">
+          <Loader size="lg" />
+          <p className="empty-state__description">Loading students...</p>
         </div>
       </div>
     );
@@ -76,123 +103,213 @@ function StudentListCards() {
 
   if (error) {
     return (
-      <div className="alert alert-danger m-4">
-        Error loading students: {error}
-      </div>
-    );
-  }
-
-  if (!students || students.length === 0) {
-    return (
-      <div className="container text-center my-5">
-        <div className="card shadow-sm p-5">
-          <h5 className="text-muted">No student records found</h5>
-          <Link to="/add" className="btn btn-primary mt-3">
-            <FaUserPlus className="me-1" />
-            Add First Student
-          </Link>
+      <div className="page-container">
+        <Alert variant="danger" title="Error Loading Students">
+          {error}
+        </Alert>
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <Button onClick={fetchStudents}>Try Again</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-primary mb-0">
-          <FaUserGraduate className="me-2" />
-          Student Records
-        </h2>
-        <Link to="/add" className="btn btn-primary">
-          <FaUserGraduate className="me-1" />
-          Add Student
-        </Link>
+    <div className="page-container">
+      <div className="page-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
+          <div>
+            <h1 className="page-title">
+              <FaUserGraduate style={{ marginRight: 'var(--space-3)', verticalAlign: 'middle' }} />
+              Student Records
+            </h1>
+            <p className="page-subtitle">
+              Manage and view all student information
+            </p>
+          </div>
+          <Link to="/add">
+            <Button variant="primary" icon={<FaUserPlus />}>
+              Add Student
+            </Button>
+          </Link>
+        </div>
+
+        {/* Search Bar */}
+        <div style={{ position: 'relative', maxWidth: '400px' }}>
+          <FaSearch 
+            style={{ 
+              position: 'absolute', 
+              left: 'var(--space-4)', 
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+              pointerEvents: 'none'
+            }} 
+          />
+          <input
+            type="text"
+            placeholder="Search students..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: 'var(--space-3) var(--space-4) var(--space-3) var(--space-10)',
+              fontSize: 'var(--font-size-base)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              transition: 'all var(--transition-base)'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = 'var(--border-color-focus)';
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'var(--border-color)';
+              e.target.style.boxShadow = 'none';
+            }}
+          />
+        </div>
       </div>
 
-      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {students.map((student) => (
-          <div key={student._id} className="col">
-            <div className="card h-100 shadow-sm border-0">
-              <div className="card-header bg-primary text-white">
-                <h5 className="card-title mb-0">
-                  {student.firstName} {student.lastName}
-                </h5>
-              </div>
-              <div className="card-body">
-                <div className="mb-3">
-                  <div className="d-flex align-items-center">
-                    <FaIdCard className="text-primary me-2" />
-                    <strong>ID:</strong>
-                    <span className="ms-2">{student.studentId}</span>
+      {filteredStudents.length === 0 ? (
+        <Card>
+          <div className="empty-state">
+            <FaUserGraduate className="empty-state__icon" />
+            <h3 className="empty-state__title">
+              {searchTerm ? 'No students found' : 'No student records'}
+            </h3>
+            <p className="empty-state__description">
+              {searchTerm 
+                ? 'Try adjusting your search terms'
+                : 'Get started by adding your first student record'
+              }
+            </p>
+            {!searchTerm && (
+              <Link to="/add">
+                <Button variant="primary" icon={<FaUserPlus />}>
+                  Add First Student
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <div className="grid grid--cols-3" style={{ gap: 'var(--space-6)' }}>
+          {filteredStudents.map((student) => (
+            <Card key={student._id} hover>
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'flex-start',
+                  marginBottom: 'var(--space-3)'
+                }}>
+                  <div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: 'var(--font-size-xl)',
+                      fontWeight: 'var(--font-weight-semibold)',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {student.firstName} {student.lastName}
+                    </h3>
+                    <p style={{ 
+                      margin: 'var(--space-1) 0 0 0',
+                      fontSize: 'var(--font-size-sm)',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      {student.studentId}
+                    </p>
                   </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="d-flex align-items-center">
-                    <FaEnvelope className="text-primary me-2" />
-                    <strong>Email:</strong>
-                    <span className="ms-2 text-truncate">{student.email}</span>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="d-flex align-items-center">
-                    <FaBirthdayCake className="text-primary me-2" />
-                    <strong>DOB:</strong>
-                    <span className="ms-2">{formatDate(student.dob)}</span>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="d-flex align-items-center">
-                    <FaSchool className="text-primary me-2" />
-                    <strong>Department:</strong>
-                    <span className="ms-2">{student.department}</span>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="d-flex align-items-center">
-                    <FaCalendarAlt className="text-primary me-2" />
-                    <strong>Enrolled:</strong>
-                    <span className="ms-2">{student.enrollmentYear}</span>
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-center">
-                  <FaToggleOn className="text-primary me-2" />
-                  <strong>Status:</strong>
-                  <span className={`badge ms-2 ${student.isActive ? 'bg-success' : 'bg-secondary'}`}>
+                  <span style={{
+                    padding: 'var(--space-1) var(--space-3)',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: 'var(--font-size-xs)',
+                    fontWeight: 'var(--font-weight-medium)',
+                    backgroundColor: student.isActive ? 'var(--color-success-light)' : 'var(--color-gray-200)',
+                    color: student.isActive ? 'var(--color-success)' : 'var(--text-secondary)'
+                  }}>
                     {student.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </div>
-              <div className="card-footer bg-white border-0 d-flex justify-content-between">
-                <Link
-                  to={`/edit/${student._id}`}
-                  className="btn btn-sm btn-outline-primary"
-                >
-                  <FaEdit className="me-1" />
-                  Edit
-                </Link>
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => {
-                    if (window.confirm('Delete this student?')) {
-                      deleteStudent(student._id);
-                    }
-                  }}
-                >
-                  <FaTrashAlt className="me-1" />
-                  Delete
-                </button>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <FaEnvelope style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                  <span style={{ 
+                    fontSize: 'var(--font-size-sm)',
+                    color: 'var(--text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {student.email}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <FaBirthdayCake style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                    {formatDate(student.dob)}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <FaSchool style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                    {student.department}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <FaCalendarAlt style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                    Enrolled: {student.enrollmentYear}
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+
+              <div style={{ 
+                marginTop: 'var(--space-6)',
+                paddingTop: 'var(--space-4)',
+                borderTop: '1px solid var(--border-color)',
+                display: 'flex',
+                gap: 'var(--space-2)'
+              }}>
+                <Link to={`/edit/${student._id}`} style={{ flex: 1 }}>
+                  <Button variant="outline" fullWidth icon={<FaEdit />}>
+                    Edit
+                  </Button>
+                </Link>
+                <Button 
+                  variant="danger" 
+                  fullWidth
+                  icon={<FaTrashAlt />}
+                  onClick={() => deleteStudent(student._id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {searchTerm && filteredStudents.length > 0 && (
+        <div style={{ 
+          marginTop: 'var(--space-6)',
+          textAlign: 'center',
+          color: 'var(--text-secondary)',
+          fontSize: 'var(--font-size-sm)'
+        }}>
+          Showing {filteredStudents.length} of {students.length} students
+        </div>
+      )}
     </div>
   );
 }
 
-export default StudentListCards;
+export default StudentList;
