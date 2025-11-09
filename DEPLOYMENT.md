@@ -54,12 +54,12 @@ This guide will help you deploy the Student Management System to Render.
    - **Publish Directory**: `dist`
    - **Plan**: Free
 
-4. Add Environment Variable:
-   - `VITE_API_URL` = Your backend URL from Step 2 (e.g., `https://student-management-backend.onrender.com`)
+4. Click "Create Static Site"
+   - **Note**: Backend URL is hardcoded in `frontend/src/utils/getUrl.js`
+   - No environment variables needed for frontend
 
-5. Click "Create Static Site"
-6. Wait for deployment to complete
-7. Copy the frontend URL (e.g., `https://student-management-frontend.onrender.com`)
+5. Wait for deployment to complete
+6. Copy the frontend URL (e.g., `https://student-management-frontend.onrender.com`)
 
 ## Step 4: Update Backend CORS
 
@@ -102,7 +102,7 @@ This guide will help you deploy the Student Management System to Render.
 ### Frontend Issues
 
 - **API Connection Error**:
-  - Verify `VITE_API_URL` is set correctly in frontend environment variables
+  - Verify backend URL is correct in `frontend/src/utils/getUrl.js`
   - Check that the backend URL is accessible (visit it in browser)
   - Ensure backend health endpoint works: `https://your-backend.onrender.com/health`
 
@@ -143,9 +143,10 @@ MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
 FRONTEND_URL=https://your-frontend.onrender.com
 ```
 
-### Frontend (Environment Variables in Render)
+### Frontend
 ```
-VITE_API_URL=https://your-backend.onrender.com
+Backend URL is hardcoded in frontend/src/utils/getUrl.js
+No environment variables needed
 ```
 
 ## Notes

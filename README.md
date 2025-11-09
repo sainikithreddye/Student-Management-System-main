@@ -124,10 +124,8 @@ Student-Management-System-main/
    npm install
    ```
    
-   Create a `.env` file in the frontend directory (copy from `env.example`):
-   ```env
-   VITE_API_URL=http://localhost:5000
-   ```
+   **Note**: Backend URL is hardcoded in `frontend/src/utils/getUrl.js`
+   For local development, you may need to update it to `http://localhost:5000`
 
 ### Running the Application
 
@@ -174,7 +172,7 @@ This application is ready to deploy to Render. See [DEPLOYMENT.md](./DEPLOYMENT.
    - Set root directory to `frontend`
    - Build command: `npm install && npm run build`
    - Publish directory: `dist`
-   - Add environment variable: `VITE_API_URL` = your backend URL
+   - **Note**: Backend URL is hardcoded in `frontend/src/utils/getUrl.js`
 
 4. **Update Backend CORS**:
    - Add `FRONTEND_URL` environment variable in backend with your frontend URL
