@@ -66,7 +66,13 @@ This guide will help you deploy the Student Management System to Render.
 1. Go back to your backend service in Render
 2. Go to "Environment" tab
 3. Update `FRONTEND_URL` to your frontend URL from Step 3
-4. Save changes (this will trigger a redeploy)
+   - Example: `https://student-management-frontend.onrender.com`
+4. **Alternatively**, if you don't want to set the environment variable, you can add your frontend URL directly to the `allowedOrigins` array in `backend/server.js`
+5. Save changes (this will trigger a redeploy)
+
+**Note**: The CORS configuration already includes common Render frontend URLs. If your frontend URL is different, either:
+- Set the `FRONTEND_URL` environment variable in Render, OR
+- Add your frontend URL to the `allowedOrigins` array in `backend/server.js`
 
 ## Step 5: Verify Deployment
 
